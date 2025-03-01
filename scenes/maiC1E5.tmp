@@ -1,0 +1,29 @@
+[gd_scene load_steps=4 format=3 uid="uid://cn6vxddmkbjfw"]
+
+[ext_resource type="PackedScene" uid="uid://do1s3dw6r6fu" path="res://scenes/player.tscn" id="1_k4j4q"]
+[ext_resource type="Script" path="res://scripts/player.gd" id="2_8yjd8"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_0t2us"]
+
+[node name="main" type="Node3D"]
+
+[node name="world" type="CSGSphere3D" parent="."]
+unique_name_in_owner = true
+radius = 7.5
+radial_segments = 50
+rings = 50
+
+[node name="player" parent="world" instance=ExtResource("1_k4j4q")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8, 0)
+script = ExtResource("2_8yjd8")
+
+[node name="light" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 20, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.823, 0, 0)
+mesh = SubResource("BoxMesh_0t2us")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.6528, 0, 0)
+mesh = SubResource("BoxMesh_0t2us")
