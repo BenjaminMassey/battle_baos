@@ -1,8 +1,9 @@
-[gd_scene load_steps=5 format=3 uid="uid://cn6vxddmkbjfw"]
+[gd_scene load_steps=6 format=3 uid="uid://cn6vxddmkbjfw"]
 
 [ext_resource type="PackedScene" uid="uid://do1s3dw6r6fu" path="res://scenes/player.tscn" id="1_k4j4q"]
 [ext_resource type="Script" path="res://scripts/player.gd" id="2_8yjd8"]
 [ext_resource type="Script" path="res://scripts/camera.gd" id="3_kfpbu"]
+[ext_resource type="Script" path="res://scripts/multiplayer.gd" id="4_3otew"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_0t2us"]
 
@@ -32,4 +33,8 @@ mesh = SubResource("BoxMesh_0t2us")
 [node name="camera" type="Camera3D" parent="." node_paths=PackedStringArray("player")]
 transform = Transform3D(-4.37114e-08, -0.707107, 0.707107, 0, 0.707107, 0.707107, -1, 3.09086e-08, -3.09086e-08, 10, 10, 0)
 script = ExtResource("3_kfpbu")
+player = NodePath("../world/player")
+
+[node name="multiplayer" type="Node" parent="." node_paths=PackedStringArray("player")]
+script = ExtResource("4_3otew")
 player = NodePath("../world/player")
