@@ -13,7 +13,7 @@ rings = 30
 material = SubResource("StandardMaterial3D_iiq3w")
 
 [node name="nose" type="CSGSphere3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.5)
 radius = 0.1
 radial_segments = 30
 rings = 30
