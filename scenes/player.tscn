@@ -5,6 +5,7 @@
 [sub_resource type="SphereShape3D" id="SphereShape3D_gtmdn"]
 
 [node name="player" type="Node3D"]
+rotation_edit_mode = 1
 
 [node name="sphere" type="CSGSphere3D" parent="."]
 radial_segments = 30
