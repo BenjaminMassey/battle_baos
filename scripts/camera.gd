@@ -4,6 +4,8 @@ extends Camera3D
 @export var distance: float = 5.0;
 
 func _process(delta: float) -> void:
+	if !%main.game_running:
+		return;
 	var p_pos = player.global_position;
 	var w_pos = Vector3.ZERO;
 	var w_p_line = (p_pos - w_pos).normalized();

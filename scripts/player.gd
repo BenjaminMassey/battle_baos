@@ -9,6 +9,8 @@ var rotation_speed: float = 0.5;
 var turn_speed: float = 1.5;
 
 func _process(delta: float) -> void:
+	if !%main.game_running:
+		return;
 	var world_intersection = (global_position - world_position).normalized();
 	if Input.is_action_pressed("turn_right"):
 		forward_vec *= Quaternion(world_intersection, turn_speed * delta);
