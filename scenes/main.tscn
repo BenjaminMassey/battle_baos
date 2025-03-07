@@ -1,10 +1,11 @@
-[gd_scene load_steps=7 format=3 uid="uid://cn6vxddmkbjfw"]
+[gd_scene load_steps=8 format=3 uid="uid://cn6vxddmkbjfw"]
 
 [ext_resource type="PackedScene" uid="uid://do1s3dw6r6fu" path="res://scenes/player.tscn" id="1_k4j4q"]
 [ext_resource type="Script" uid="uid://dfg66kwnvttym" path="res://scripts/main.gd" id="1_qxh3b"]
 [ext_resource type="Script" uid="uid://cumjmxf3vaiyq" path="res://scripts/player.gd" id="2_8yjd8"]
 [ext_resource type="Script" uid="uid://dg23qc43rexnc" path="res://scripts/camera.gd" id="3_kfpbu"]
 [ext_resource type="Script" uid="uid://bbwdj7sywm7xc" path="res://scripts/multiplayer.gd" id="4_3otew"]
+[ext_resource type="Script" uid="uid://b47q88jvefixb" path="res://scripts/log.gd" id="6_tefeu"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_0t2us"]
 
@@ -50,8 +51,31 @@ player = NodePath("../world/player")
 [node name="HTTPRequest" type="HTTPRequest" parent="main/game/multiplayer"]
 timeout = 10.0
 
-[node name="gui" type="Control" parent="main"]
+[node name="gui" type="Control" parent="main/game"]
 unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -525.0
+offset_top = -290.5
+offset_right = 525.0
+offset_bottom = 290.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="log" type="VFlowContainer" parent="main/game/gui"]
+layout_mode = 0
+offset_top = 439.0
+offset_right = 269.0
+offset_bottom = 581.0
+script = ExtResource("6_tefeu")
+
+[node name="menu" type="Control" parent="main"]
+unique_name_in_owner = true
+visible = false
 layout_mode = 3
 anchors_preset = 8
 anchor_left = 0.5
@@ -65,7 +89,7 @@ offset_bottom = 250.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="input" type="VFlowContainer" parent="main/gui"]
+[node name="input" type="VFlowContainer" parent="main/menu"]
 layout_mode = 2
 anchor_left = 0.5
 anchor_top = 0.5
@@ -78,35 +102,35 @@ offset_bottom = 111.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="room_label" type="Label" parent="main/gui/input"]
+[node name="room_label" type="Label" parent="main/menu/input"]
 layout_mode = 2
 text = "Room Name:"
 
-[node name="room_edit" type="LineEdit" parent="main/gui/input"]
+[node name="room_edit" type="LineEdit" parent="main/menu/input"]
 layout_mode = 2
 
-[node name="player_label" type="Label" parent="main/gui/input"]
+[node name="player_label" type="Label" parent="main/menu/input"]
 layout_mode = 2
 text = "Player Name:"
 
-[node name="player_edit" type="LineEdit" parent="main/gui/input"]
+[node name="player_edit" type="LineEdit" parent="main/menu/input"]
 layout_mode = 2
 
-[node name="edit_button_spacer" type="Label" parent="main/gui/input"]
+[node name="edit_button_spacer" type="Label" parent="main/menu/input"]
 layout_mode = 2
 
-[node name="create_button" type="Button" parent="main/gui/input"]
+[node name="create_button" type="Button" parent="main/menu/input"]
 layout_mode = 2
 text = "Create Room"
 
-[node name="join_button" type="Button" parent="main/gui/input"]
+[node name="join_button" type="Button" parent="main/menu/input"]
 layout_mode = 2
 text = "Join Room"
 
-[node name="info_text" type="Label" parent="main/gui/input"]
+[node name="info_text" type="Label" parent="main/menu/input"]
 layout_mode = 2
 horizontal_alignment = 1
 
 [connection signal="request_completed" from="main/game/multiplayer/HTTPRequest" to="main/game/multiplayer" method="_on_http_request_request_completed"]
-[connection signal="pressed" from="main/gui/input/create_button" to="main/game/multiplayer" method="_on_create_button_pressed"]
-[connection signal="pressed" from="main/gui/input/join_button" to="main/game/multiplayer" method="_on_join_button_pressed"]
+[connection signal="pressed" from="main/menu/input/create_button" to="main/game/multiplayer" method="_on_create_button_pressed"]
+[connection signal="pressed" from="main/menu/input/join_button" to="main/game/multiplayer" method="_on_join_button_pressed"]

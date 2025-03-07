@@ -7,6 +7,12 @@ var player_position: Vector3 = Vector3(0, world_radius + (player_radius * 0.5), 
 var forward_vec: Vector3 = Vector3.RIGHT;
 var rotation_speed: float = 0.5;
 var turn_speed: float = 1.5;
+var current_height: float = 0;
+var jump_height: float = 0.1;
+var jump_up_time: float = 1.0;
+var jump_down_time: float = 1.0;
+var jumping: bool = false;
+var jump_tween;
 
 func _process(delta: float) -> void:
 	if !%main.game_running:
@@ -16,6 +22,24 @@ func _process(delta: float) -> void:
 		forward_vec *= Quaternion(world_intersection, turn_speed * delta);
 	if Input.is_action_pressed("turn_left"):
 		forward_vec *= Quaternion(world_intersection, -turn_speed * delta);
-	player_position *= Quaternion(forward_vec, rotation_speed * delta);
-	transform.origin = player_position;
-	look_at(Quaternion(forward_vec, rotation_speed * delta) * player_position);
+	if Input.is_action_just_pressed("jump"):
+		jump();
+	var forward_rotation = Quaternion(forward_vec, rotation_speed * delta)
+	player_position *= forward_rotation;
+	var player_origin = player_position * (1.0 + current_height);
+	transform.origin = player_origin;
+	look_at(forward_rotation * player_origin);
+	
+func jump() -> void:
+	if jumping:
+		return;
+	jumping = true;
+	jump_tween = get_tree().create_tween();
+	jump_tween.tween_property(self, "current_height", jump_height, jump_up_time);
+	var jump_down = func():
+		jump_tween = get_tree().create_tween();
+		jump_tween.tween_property(self, "current_height", 0.0, jump_down_time);
+		var jump_finish = func():
+			jumping = false;
+		jump_tween.tween_callback(jump_finish);
+	jump_tween.tween_callback(jump_down);
