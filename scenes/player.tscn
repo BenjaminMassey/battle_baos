@@ -1,11 +1,16 @@
-[gd_scene load_steps=3 format=3 uid="uid://do1s3dw6r6fu"]
+[gd_scene load_steps=5 format=3 uid="uid://do1s3dw6r6fu"]
+
+[ext_resource type="Script" uid="uid://dtafnrpbmula2" path="res://scripts/trail.gd" id="1_3vyb7"]
+[ext_resource type="Script" uid="uid://cumjmxf3vaiyq" path="res://scripts/player.gd" id="1_g2els"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_iiq3w"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_gtmdn"]
+radius = 0.4
 
 [node name="player" type="Node3D"]
 rotation_edit_mode = 1
+script = ExtResource("1_g2els")
 
 [node name="sphere" type="CSGSphere3D" parent="."]
 radial_segments = 30
@@ -20,6 +25,18 @@ rings = 30
 material = SubResource("StandardMaterial3D_iiq3w")
 
 [node name="area" type="Area3D" parent="."]
+collision_layer = 2
 
 [node name="collider" type="CollisionShape3D" parent="area"]
 shape = SubResource("SphereShape3D_gtmdn")
+
+[node name="trail" type="Node3D" parent="." node_paths=PackedStringArray("player")]
+script = ExtResource("1_3vyb7")
+player = NodePath("..")
+
+[node name="timer" type="Timer" parent="trail"]
+wait_time = 0.1
+autostart = true
+
+[connection signal="area_entered" from="area" to="trail" method="_on_area_area_entered"]
+[connection signal="timeout" from="trail/timer" to="trail" method="_on_timer_timeout"]

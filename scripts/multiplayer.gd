@@ -23,7 +23,7 @@ func _process(delta):
 		"room_id": room_id,
 		"player_id": player_name,
 		"state": {
-			"alive": true,
+			"alive": player.alive,
 			"position": [player.global_position.x, player.global_position.y, player.global_position.z],
 			"rotation": [player.rotation.x, player.rotation.y, player.rotation.z]
 		}
@@ -56,8 +56,9 @@ func update_states(data: Dictionary):
 		var peer = get_node(name);
 		if peer == null:
 			peer = player_scene.instantiate();
-			peer.name = name;
 			add_child(peer);
+			peer.name = name;
+			peer.is_peer = true;
 			%gui.find_child("log").message("Player \"" + name + "\" joined.");
 		if state["alive"]:
 			if position_tweens.has(name):
@@ -74,7 +75,8 @@ func update_states(data: Dictionary):
 		if child.name not in player_names:
 			%gui.find_child("log").message("Player \"" + child.name + "\" left.");
 			child.queue_free();
-
+	#TODO: handle everybody dead
+	
 func _on_create_button_pressed() -> void:
 	print("create button");
 	room_id = %menu.find_child("input").find_child("room_edit").text;

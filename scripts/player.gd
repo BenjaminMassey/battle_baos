@@ -8,14 +8,18 @@ var forward_vec: Vector3 = Vector3.RIGHT;
 var rotation_speed: float = 0.5;
 var turn_speed: float = 1.5;
 var current_height: float = 0;
-var jump_height: float = 0.1;
+var jump_height: float = 0.15;
 var jump_up_time: float = 1.0;
 var jump_down_time: float = 1.0;
 var jumping: bool = false;
 var jump_tween;
+var alive: bool = true;
+var is_peer: bool = false;
 
 func _process(delta: float) -> void:
-	if !%main.game_running:
+	if !get_tree().get_root().find_child("main", true, false).game_running:
+		return;
+	if !alive || is_peer:
 		return;
 	var world_intersection = (global_position - world_position).normalized();
 	if Input.is_action_pressed("turn_right"):
@@ -43,3 +47,11 @@ func jump() -> void:
 			jumping = false;
 		jump_tween.tween_callback(jump_finish);
 	jump_tween.tween_callback(jump_down);
+
+func die() -> void:
+	if !alive:
+		return;
+	alive = false;
+	#var tween = get_tree().create_tween();
+	#tween.tween_property(self, "scale", Vector3(0.25, 0.25, 0.25), 1);
+	#TODO: really want a fade, actually, if anything

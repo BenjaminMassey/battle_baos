@@ -1,0 +1,23 @@
+[gd_scene load_steps=3 format=3 uid="uid://cb3m2aylulmf6"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_rxrok"]
+top_radius = 0.175
+bottom_radius = 0.175
+height = 0.5
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_ipyjf"]
+height = 0.5
+radius = 0.175
+
+[node name="trail_point" type="Node3D"]
+
+[node name="mesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
+mesh = SubResource("CylinderMesh_rxrok")
+
+[node name="area" type="Area3D" parent="."]
+collision_mask = 2
+
+[node name="collider" type="CollisionShape3D" parent="area"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
+shape = SubResource("CylinderShape3D_ipyjf")
