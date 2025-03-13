@@ -28,26 +28,39 @@ func _process(delta):
 			"rotation": [player.rotation.x, player.rotation.y, player.rotation.z]
 		}
 	}
-	var message: Dictionary = {
+	var out_message: Dictionary = {
 		"tag": "player_message",
 		"data": JSON.stringify(player_message)
 	};
-	udp.put_packet(JSON.stringify(message).to_utf8_buffer())
+	udp.put_packet(JSON.stringify(out_message).to_utf8_buffer())
 	#print("Sent to server: ", message)
 	
 	if udp.get_available_packet_count() > 0:
 		var response = udp.get_packet()
 		if response != null:
-			var data = JSON.parse_string(response.get_string_from_utf8());
-			#print("Received from server: ", data)
-			if response != null:
-				update_states(data);
+			var in_message = JSON.parse_string(response.get_string_from_utf8());
+			#print("Received from server: ", in_message)
+			if in_message != null:
+				handle_udp(in_message);
 			else:
 				print("Failed to parse UDP response");
 		else:
 			print("Failed to get UDP response");
 
-func update_states(data: Dictionary):
+func handle_udp(message: Dictionary):
+	if !message.has("tag"):
+		print("no tag in message: skipping");
+		return;
+	var tag = message["tag"];
+	var data = message["data"];
+	if tag == "game_state":
+		handle_states(JSON.parse_string(data));
+	elif tag == "error":
+		print("Error UDP response: ", data);
+	else:
+		print("Unhandled UDP tag: ", tag);
+
+func handle_states(data: Dictionary):
 	var player_names = data["state"]["names"];
 	for name in player_names:
 		if name == player_name:
