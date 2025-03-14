@@ -3,19 +3,26 @@ extends Node3D
 @export var player: Node3D;
 
 var trail_point = preload("res://scenes/trail_point.tscn");
-var count = 0;
+var points: Array[Node3D] = [];
+
+var main_node;
+var player_node;
+
+func _ready() -> void:
+	main_node = get_tree().get_root().find_child("main", true, false);
+	player_node = get_tree().get_root().find_child("player", true, false);
 
 func _on_timer_timeout() -> void:
-	if !get_tree().get_root().find_child("main", true, false).game_running:
-		return;
-	if !player.alive:
+	if player.is_peer:
+		print(main_node.game_running, ".", player_node.countdown_running, ".", player.alive);
+	if !main_node.game_running or player_node.countdown_running or (!player.alive and !player.is_peer):
 		return;
 	var point = trail_point.instantiate();
+	points.append(point);
 	get_tree().get_root().add_child(point);
 	point.transform.origin = player.transform.origin;
 	player_align(point);
 	enable_delay(point);
-	count += 1;
 
 func player_align(point: Node3D):
 	var timer = Timer.new();
@@ -44,3 +51,8 @@ func enable_delay(point: Node3D):
 func _on_area_area_entered(area: Area3D) -> void:
 	if !player.is_peer:
 		player.die();
+
+func destroy_points() -> void:
+	for point in points:
+		point.queue_free();
+	points.clear();

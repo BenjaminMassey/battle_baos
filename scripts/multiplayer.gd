@@ -61,11 +61,16 @@ func handle_udp(message: Dictionary):
 		print("Unhandled UDP tag: ", tag);
 
 func handle_states(data: Dictionary):
+	var dead_count = 0;
 	var player_names = data["state"]["names"];
 	for name in player_names:
-		if name == player_name:
-			continue;
 		var state = data["state"]["data"][name]["state"];
+		if !state["alive"]:
+			dead_count += 1;
+		if name == player_name:
+			var player_index = int(data["state"]["data"][name]["index"]);
+			player.player_spawn = player.player_spawns[player_index];
+			continue;
 		var peer = get_node(name);
 		if peer == null:
 			peer = player_scene.instantiate();
@@ -73,6 +78,12 @@ func handle_states(data: Dictionary):
 			peer.name = name;
 			peer.is_peer = true;
 			%gui.find_child("log").message("Player \"" + name + "\" joined.");
+			#TODO: don't really wanna force reset, should be waiting state
+			player.reset();
+			for child in get_children():
+				if child.name == "HTTPRequest":
+					continue; #TODO: exclude HTTPRequest better ahh
+				child.reset();
 		if state["alive"]:
 			if position_tweens.has(name):
 				position_tweens[name].kill();
@@ -81,14 +92,21 @@ func handle_states(data: Dictionary):
 			#peer.global_position = Vector3(state["position"][0], state["position"][1], state["position"][2]);
 			peer.rotation = Vector3(state["rotation"][0], state["rotation"][1], state["rotation"][2]);
 		else:
-			pass; #TODO: apply some dead state
+			peer.die();
 	for child in get_children():
 		if child.name == "HTTPRequest":
-			continue; #TODO: shouldn't need exceptions, do better check
+			continue; #TODO: exclude HTTPRequest better ahh
 		if child.name not in player_names:
 			%gui.find_child("log").message("Player \"" + child.name + "\" left.");
 			child.queue_free();
-	#TODO: handle everybody dead
+	if dead_count == get_child_count() and !player.countdown_running:
+		print("RESET TIME");
+		player.reset();
+		for child in get_children():
+			if child.name == "HTTPRequest":
+				continue; #TODO: exclude HTTPRequest better ahh
+			child.reset();
+			child.alive = true; #TODO: shouldn't be needed
 	
 func _on_create_button_pressed() -> void:
 	print("create button");

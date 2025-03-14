@@ -3,7 +3,16 @@ extends Node3D
 var world_position: Vector3 = Vector3.ZERO;
 var world_radius: float = 7.5;
 var player_radius: float = 1.0;
-var player_position: Vector3 = Vector3(0, world_radius + (player_radius * 0.5), 0);
+var player_spawn: Vector3 = Vector3(0, world_radius + (player_radius * 0.5), 0);
+var player_spawns: Array[Vector3] = [
+	Vector3(0, world_radius + (player_radius * 0.5), 0),
+	Vector3(0, 0, world_radius + (player_radius * 0.5)),
+	Vector3(world_radius + (player_radius * 0.5), 0, 0),
+	Vector3(0, -1.0 * (world_radius + (player_radius * 0.5)), 0),
+	Vector3(0, 0, -1.0 * (world_radius + (player_radius * 0.5))),
+	Vector3(-1.0 * (world_radius + (player_radius * 0.5)), 0, 0)
+]; # TODO: many more player_spawns, real ordering
+var player_position: Vector3 = player_spawn;
 var forward_vec: Vector3 = Vector3.RIGHT;
 var rotation_speed: float = 0.5;
 var turn_speed: float = 1.5;
@@ -15,11 +24,28 @@ var jumping: bool = false;
 var jump_tween;
 var alive: bool = true;
 var is_peer: bool = false;
+var countdown_running = false;
+var countdown_done = false;
+
+func _ready() -> void:
+	var start_game = func():
+		countdown_done = true;
+		countdown_running = false;
+		if !is_peer:
+			var log = get_tree().get_root().find_child("gui", true, false).find_child("log");
+			log.message("Go!");
+	$timer.connect("timeout", start_game);
 
 func _process(delta: float) -> void:
+	if Input.is_action_just_pressed("debug_refresh") and OS.is_debug_build():
+		reset();
 	if !get_tree().get_root().find_child("main", true, false).game_running:
 		return;
 	if !alive || is_peer:
+		return;
+	if !countdown_done:
+		if !countdown_running:
+			countdown();
 		return;
 	var world_intersection = (global_position - world_position).normalized();
 	if Input.is_action_pressed("turn_right"):
@@ -55,3 +81,24 @@ func die() -> void:
 	#var tween = get_tree().create_tween();
 	#tween.tween_property(self, "scale", Vector3(0.25, 0.25, 0.25), 1);
 	#TODO: really want a fade, actually, if anything
+
+func countdown() -> void:
+	countdown_running = true;
+	$timer.start();
+
+func reset() -> void:
+	# TODO: on initial join, player_spawn set too late to apply
+	if !is_peer: # let multiplayer.gd handle peer positioning
+		player_position = player_spawn;
+		transform.origin = player_spawn;
+		forward_vec = Vector3.RIGHT;
+		var log = get_tree().get_root().find_child("gui", true, false).find_child("log");
+		log.message("Countdown Start!");
+	$trail.destroy_points();
+	alive = true;
+	if jump_tween:
+		jump_tween.stop();
+	jumping = false;
+	current_height = 0;
+	countdown_done = false;
+	countdown_running = false;
