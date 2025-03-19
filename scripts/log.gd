@@ -1,5 +1,7 @@
 extends VFlowContainer
 
+class_name Log;
+
 func message(text: String):
 	var log_message = Label.new();
 	log_message.text = text;

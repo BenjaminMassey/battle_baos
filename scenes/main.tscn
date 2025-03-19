@@ -1,8 +1,10 @@
-[gd_scene load_steps=6 format=3 uid="uid://cn6vxddmkbjfw"]
+[gd_scene load_steps=8 format=3 uid="uid://cn6vxddmkbjfw"]
 
 [ext_resource type="PackedScene" uid="uid://do1s3dw6r6fu" path="res://scenes/player.tscn" id="1_k4j4q"]
 [ext_resource type="Script" uid="uid://dg23qc43rexnc" path="res://scripts/camera.gd" id="3_kfpbu"]
 [ext_resource type="Script" uid="uid://bbwdj7sywm7xc" path="res://scripts/multiplayer.gd" id="4_3otew"]
+[ext_resource type="Script" uid="uid://b3prqan84orf8" path="res://scripts/ready_button.gd" id="5_tbgi4"]
+[ext_resource type="Script" uid="uid://1no7u3alou05" path="res://scripts/countdown.gd" id="6_o6xl0"]
 [ext_resource type="Script" uid="uid://b47q88jvefixb" path="res://scripts/log.gd" id="6_tefeu"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_0t2us"]
@@ -40,15 +42,18 @@ transform = Transform3D(-4.37114e-08, -0.707107, 0.707107, 0, 0.707107, 0.707107
 script = ExtResource("3_kfpbu")
 player = NodePath("../world/player")
 
-[node name="multiplayer" type="Node" parent="main/game" node_paths=PackedStringArray("player")]
+[node name="multiplayer" type="Node" parent="main/game" node_paths=PackedStringArray("player", "log", "ready_statuses")]
 script = ExtResource("4_3otew")
 player = NodePath("../world/player")
+log = NodePath("../gui/log")
+ready_statuses = NodePath("../gui/ready_statuses")
 
 [node name="HTTPRequest" type="HTTPRequest" parent="main/game/multiplayer"]
 timeout = 10.0
 
 [node name="gui" type="Control" parent="main/game"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 3
 anchors_preset = 8
 anchor_left = 0.5
@@ -68,6 +73,33 @@ offset_top = 439.0
 offset_right = 269.0
 offset_bottom = 581.0
 script = ExtResource("6_tefeu")
+
+[node name="ready_button" type="Button" parent="main/game/gui" node_paths=PackedStringArray("player")]
+layout_mode = 0
+offset_left = 497.0
+offset_top = 432.5
+offset_right = 553.0
+offset_bottom = 463.5
+text = "Ready"
+script = ExtResource("5_tbgi4")
+player = NodePath("../../world/player")
+
+[node name="ready_statuses" type="Label" parent="main/game/gui"]
+layout_mode = 0
+offset_left = 663.0
+offset_top = 361.5
+offset_right = 765.0
+offset_bottom = 436.5
+
+[node name="countdown" type="Label" parent="main/game/gui"]
+layout_mode = 0
+offset_left = 471.0
+offset_top = 351.5
+offset_right = 578.0
+offset_bottom = 374.5
+script = ExtResource("6_o6xl0")
+
+[node name="timer" type="Timer" parent="main/game/gui/countdown"]
 
 [node name="menu" type="Control" parent="main"]
 unique_name_in_owner = true

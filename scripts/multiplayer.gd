@@ -1,6 +1,8 @@
 extends Node
 
 @export var player: Player;
+@export var log: Log;
+@export var ready_statuses: Label;
 
 var player_scene = preload("res://scenes/player.tscn")
 
@@ -24,6 +26,7 @@ func _process(delta):
 		"player_id": self.player_name,
 		"state": {
 			"alive": self.player.player_state != Player.State.Dead,
+			"ready": self.player.player_data["ready"],
 			"position": [self.player.global_position.x, self.player.global_position.y, self.player.global_position.z],
 			"rotation": [self.player.rotation.x, self.player.rotation.y, self.player.rotation.z]
 		}
@@ -61,12 +64,19 @@ func handle_udp(message: Dictionary):
 		print("Unhandled UDP tag: ", tag);
 
 func handle_states(data: Dictionary):
+	var ready_text = "";
+	var ready_count = 0;
 	var dead_count = 0;
 	var player_names = data["state"]["names"];
 	for name in player_names:
 		var state = data["state"]["data"][name]["state"];
 		if !state["alive"]:
 			dead_count += 1;
+		if state["ready"]:
+			ready_count += 1;
+			ready_text += name + ": " + "Ready\n";
+		else:
+			ready_text += name + ": " + "Not Ready\n";
 		if name == self.player_name:
 			var player_index = int(data["state"]["data"][name]["index"]);
 			self.player.player_data["spawn"] = Global.player_spawn_points[player_index];
@@ -77,13 +87,8 @@ func handle_states(data: Dictionary):
 			add_child(peer);
 			peer.name = name;
 			peer.player_type = Player.Type.Peer;
-			%gui.find_child("log").message("Player \"" + name + "\" joined."); # TODO: better easier logging
-			#TODO: don't really wanna force reset, should be waiting state
-			self.player.reset();
-			for child in get_children():
-				if child.name == "HTTPRequest":
-					continue; #TODO: exclude HTTPRequest better ahh
-				child.reset();
+			log.message("Player \"" + name + "\" joined.");
+			Signals.round_reset.emit(); #TODO: don't really wanna force reset, should be waiting state
 		if state["alive"]:
 			if position_tweens.has(name):
 				position_tweens[name].kill();
@@ -97,17 +102,18 @@ func handle_states(data: Dictionary):
 		if child.name == "HTTPRequest":
 			continue; #TODO: exclude HTTPRequest better ahh
 		if child.name not in player_names:
-			%gui.find_child("log").message("Player \"" + child.name + "\" left.");
+			log.message("Player \"" + child.name + "\" left.");
 			child.queue_free();
-	if dead_count == get_child_count() and player.player_state != Player.State.Waiting: # TODO: other player states?
+	if dead_count == get_child_count() and player.player_state != Player.State.Waiting:
 		print("RESET TIME");
-		self.player.reset();
-		self.player.player_state = Player.State.Waiting;
-		for child in get_children():
-			if child.name == "HTTPRequest":
-				continue; #TODO: exclude HTTPRequest better ahh
-			child.reset();
-			child.player_state = Player.State.Waiting;
+		Signals.round_reset.emit();
+	if ready_count == get_child_count() and player.player_state == Player.State.Waiting:
+		Signals.players_ready.emit(); # TODO: stop spamming of this
+	if player.player_state == Player.State.Waiting:
+		ready_statuses.text = ready_text;
+	else:
+		ready_statuses.text = "";
+	# TODO: not a find child every single time
 	
 func _on_create_button_pressed() -> void:
 	print("create button");
@@ -146,7 +152,8 @@ func _on_http_request_request_completed(result: int, response_code: int, headers
 	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200 and (body.get_string_from_utf8() == "Room exists." or body.get_string_from_utf8() == "Room created.") : # TODO: better
 		Global.state = Global.State.Game;
 		%menu.hide();
-		# TODO: combine two lines above via global-style signal-ing
+		%gui.show();
+		# TODO: combine three lines above via global-style signal-ing
 		self.player.player_state = Player.State.Waiting;
 	else:
 		var message = body.get_string_from_utf8();

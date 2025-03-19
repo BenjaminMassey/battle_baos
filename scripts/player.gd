@@ -23,6 +23,7 @@ var player_state = State.Inactive; # starting in menu
 	"forward": Vector3.RIGHT, # TODO: probably want diff for diff spawns?
 	"current_height": 0.0,
 	"jumping": false,
+	"ready": false,
 };
 
 @export var player_movement = {
@@ -39,6 +40,8 @@ var jump_tween = null;
 
 func _ready() -> void:
 	$timer.connect("timeout", start_game);
+	Signals.round_reset.connect(reset);
+	Signals.players_ready.connect(start_countdown);
 	face_forward();
 
 func _process(delta: float) -> void:
@@ -46,13 +49,8 @@ func _process(delta: float) -> void:
 		reset();
 	if Global.state != Global.State.Game or self.player_type == Type.Peer:
 		return;
-	match self.player_state:
-		State.Playing:
-			move_and_look(delta);
-		State.Waiting:
-			if $timer.is_stopped():
-				$timer.start();
-			# TODO: probably want more of a countdown-ing state, and timer start can be triggered by all player's "ready" status
+	if self.player_state == State.Playing:
+		move_and_look(delta);
 
 func move_and_look(delta: float) -> void:
 	var world_intersection = (global_position - Global.world["position"]).normalized();
@@ -72,8 +70,7 @@ func start_game() -> void:
 	print("start game");
 	self.player_state = State.Playing;
 	if self.player_type == Type.Host:
-		var log = get_tree().get_root().find_child("gui", true, false).find_child("log"); # TODO: better global-ing
-		log.message("Go!");
+		self.player_data["ready"] = false;
 	
 func jump() -> void:
 	if self.player_data["jumping"]:
@@ -101,8 +98,6 @@ func reset() -> void:
 		self.player_data["forward"] = Vector3.RIGHT; # TODO: probably want diff for diff spawns?
 		face_forward();
 		# TODO: feel like should reset jump values, but cannot get it to work
-		var log = get_tree().get_root().find_child("gui", true, false).find_child("log"); # TODO: better global-ing
-		log.message("Countdown Start!");
 	$trail.destroy_points();
 	self.player_state = State.Waiting;
 	$timer.stop();
@@ -114,3 +109,7 @@ func face_forward() -> void:
 	var forward_rotation = Quaternion(Vector3.RIGHT, 0.05 * PI);
 	look_at(forward_rotation * p_pos, Vector3.RIGHT);
 # TODO: make more dynamic: currently not usable on _ready() or $timer.start, for example
+
+func start_countdown() -> void:
+	if $timer.is_stopped():
+		$timer.start();
