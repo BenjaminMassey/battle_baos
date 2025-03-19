@@ -99,6 +99,7 @@ func reset() -> void:
 		face_forward();
 		# TODO: feel like should reset jump values, but cannot get it to work
 	$trail.destroy_points();
+	extra_trail_clear(); # TODO: this shouldn't be necessary
 	self.player_state = State.Waiting;
 	$timer.stop();
 
@@ -113,3 +114,11 @@ func face_forward() -> void:
 func start_countdown() -> void:
 	if $timer.is_stopped():
 		$timer.start();
+		
+func extra_trail_clear() -> void:
+	var clear_timer = Timer.new();
+	clear_timer.wait_time = 3.0;
+	clear_timer.one_shot = true;
+	clear_timer.connect("timeout", $trail.destroy_points);
+	add_child(clear_timer);
+	clear_timer.start();

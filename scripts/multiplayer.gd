@@ -14,6 +14,7 @@ var udp_port = 8081;
 var room_id = "";
 var player_name = "";
 var position_tweens: Dictionary;
+var just_joined = false;
 
 func _process(delta):
 	if Global.state != Global.State.Game:
@@ -64,7 +65,7 @@ func handle_udp(message: Dictionary):
 		print("Unhandled UDP tag: ", tag);
 
 func handle_states(data: Dictionary):
-	var ready_text = "";
+	var ready_text = ""; # TODO: happening every UDP message, which feels overkill
 	var ready_count = 0;
 	var dead_count = 0;
 	var player_names = data["state"]["names"];
@@ -80,7 +81,10 @@ func handle_states(data: Dictionary):
 		if name == self.player_name:
 			var player_index = int(data["state"]["data"][name]["index"]);
 			self.player.player_data["spawn"] = Global.player_spawn_points[player_index];
-			continue;
+			if self.just_joined:
+				self.player.player_data["position"] = Global.player_spawn_points[player_index];
+				self.player.global_position = Global.player_spawn_points[player_index];
+			continue; # TODO: above is happening every UDP message, which feels overkill
 		var peer = get_node(name);
 		if peer == null:
 			peer = player_scene.instantiate();
@@ -99,8 +103,8 @@ func handle_states(data: Dictionary):
 		else:
 			peer.die();
 	for child in get_children():
-		if child.name == "HTTPRequest":
-			continue; #TODO: exclude HTTPRequest better ahh
+		if child.name == "HTTPRequest" or child.name.contains("Timer"):
+			continue; #TODO: exclude HTTPRequest and timers better ahh
 		if child.name not in player_names:
 			log.message("Player \"" + child.name + "\" left.");
 			child.queue_free();
@@ -145,6 +149,7 @@ func _on_join_button_pressed() -> void:
 	var url = "http://" + self.server_address + ":" + str(self.http_port) + "/checkRoom";
 	var headers = ["Content-Type: application/json"];
 	$HTTPRequest.request(url, headers, HTTPClient.METHOD_GET, json);
+	joined_handle(); # for setting multiplayer settings sufficiently after player.gd setup calls
 # TODO: less reliance on % and find_child calls
 # TODO: very similar to create button: simplify
 
@@ -162,3 +167,16 @@ func _on_http_request_request_completed(result: int, response_code: int, headers
 		print("[", response_code, "] ", message);
 		%menu.find_child("input").find_child("info_text").text = message;
 # TODO: less reliance on % and find_child calls
+
+func joined_handle():
+	self.just_joined = true;
+	var join_timer = Timer.new();
+	join_timer.wait_time = 3.0;
+	join_timer.one_shot = true;
+	var joined_off = func():
+		self.just_joined = false;
+		join_timer.queue_free();
+	join_timer.connect("timeout", joined_off);
+	add_child(join_timer);
+	join_timer.start();
+# TODO: this is a bit janky, to say the least
