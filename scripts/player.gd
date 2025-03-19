@@ -1,104 +1,116 @@
 extends Node3D
 
-var world_position: Vector3 = Vector3.ZERO;
-var world_radius: float = 7.5;
-var player_radius: float = 1.0;
-var player_spawn: Vector3 = Vector3(0, world_radius + (player_radius * 0.5), 0);
-var player_spawns: Array[Vector3] = [
-	Vector3(0, world_radius + (player_radius * 0.5), 0),
-	Vector3(0, 0, world_radius + (player_radius * 0.5)),
-	Vector3(world_radius + (player_radius * 0.5), 0, 0),
-	Vector3(0, -1.0 * (world_radius + (player_radius * 0.5)), 0),
-	Vector3(0, 0, -1.0 * (world_radius + (player_radius * 0.5))),
-	Vector3(-1.0 * (world_radius + (player_radius * 0.5)), 0, 0)
-]; # TODO: many more player_spawns, real ordering
-var player_position: Vector3 = player_spawn;
-var forward_vec: Vector3 = Vector3.RIGHT;
-var rotation_speed: float = 0.5;
-var turn_speed: float = 1.5;
-var current_height: float = 0;
-var jump_height: float = 0.15;
-var jump_up_time: float = 1.0;
-var jump_down_time: float = 1.0;
-var jumping: bool = false;
-var jump_tween;
-var alive: bool = true;
-var is_peer: bool = false;
-var countdown_running = false;
-var countdown_done = false;
+class_name Player;
+
+enum Type {
+	Host, ## player actually being controlled by this instance of the game
+	Peer, ## an entity created and managed by multiplayer.gd
+};
+var player_type = Type.Host; # changed by multiplayer.gd for peers
+
+enum State {
+	Playing, ## in an active game, and alive, so actively moving+doing
+	Waiting, ## in a game, but waiting for it to start
+	Dead, ## in an active game, but dead
+	Inactive ## not being used, such as in the menu
+};
+var player_state = State.Inactive; # starting in menu
+
+@onready var player_data = {
+	"radius": $sphere.radius,
+	"spawn": Global.player_spawn_points[0], # changed later by multiplayer.gd
+	"position": Global.player_spawn_points[0], # changed by input if host, multiplayer.gd if peer
+	"forward": Vector3.RIGHT, # TODO: probably want diff for diff spawns?
+	"current_height": 0.0,
+	"jumping": false,
+};
+
+@export var player_movement = {
+	"rotation_speed": 0.5,
+	"turn_speed": 1.5,
+	"jump_height": 0.15,
+	"jump_time": {
+		"up": 1.0,
+		"down": 1.0,
+	},
+}
+
+var jump_tween = null;
 
 func _ready() -> void:
-	var start_game = func():
-		countdown_done = true;
-		countdown_running = false;
-		if !is_peer:
-			var log = get_tree().get_root().find_child("gui", true, false).find_child("log");
-			log.message("Go!");
 	$timer.connect("timeout", start_game);
+	face_forward();
 
 func _process(delta: float) -> void:
 	if Input.is_action_just_pressed("debug_refresh") and OS.is_debug_build():
 		reset();
-	if !get_tree().get_root().find_child("main", true, false).game_running:
+	if Global.state != Global.State.Game or self.player_type == Type.Peer:
 		return;
-	if !alive || is_peer:
-		return;
-	if !countdown_done:
-		if !countdown_running:
-			countdown();
-		return;
-	var world_intersection = (global_position - world_position).normalized();
+	match self.player_state:
+		State.Playing:
+			move_and_look(delta);
+		State.Waiting:
+			if $timer.is_stopped():
+				$timer.start();
+			# TODO: probably want more of a countdown-ing state, and timer start can be triggered by all player's "ready" status
+
+func move_and_look(delta: float) -> void:
+	var world_intersection = (global_position - Global.world["position"]).normalized();
 	if Input.is_action_pressed("turn_right"):
-		forward_vec *= Quaternion(world_intersection, turn_speed * delta);
+		self.player_data["forward"] *= Quaternion(world_intersection, self.player_movement["turn_speed"] * delta);
 	if Input.is_action_pressed("turn_left"):
-		forward_vec *= Quaternion(world_intersection, -turn_speed * delta);
+		self.player_data["forward"] *= Quaternion(world_intersection, self.player_movement["turn_speed"] * delta * -1.0);
 	if Input.is_action_just_pressed("jump"):
 		jump();
-	var forward_rotation = Quaternion(forward_vec, rotation_speed * delta)
-	player_position *= forward_rotation;
-	var player_origin = player_position * (1.0 + current_height);
+	var forward_rotation = Quaternion(self.player_data["forward"], self.player_movement["rotation_speed"] * delta)
+	self.player_data["position"] *= forward_rotation;
+	var player_origin = self.player_data["position"] * (1.0 + self.player_data["current_height"]);
 	transform.origin = player_origin;
 	look_at(forward_rotation * player_origin);
+
+func start_game() -> void:
+	print("start game");
+	self.player_state = State.Playing;
+	if self.player_type == Type.Host:
+		var log = get_tree().get_root().find_child("gui", true, false).find_child("log"); # TODO: better global-ing
+		log.message("Go!");
 	
 func jump() -> void:
-	if jumping:
+	if self.player_data["jumping"]:
 		return;
-	jumping = true;
-	jump_tween = get_tree().create_tween();
-	jump_tween.tween_property(self, "current_height", jump_height, jump_up_time);
+	self.player_data["jumping"] = true;
+	self.jump_tween = get_tree().create_tween();
+	self.jump_tween.tween_property(self, "player_data:current_height", self.player_movement["jump_height"], self.player_movement["jump_time"]["up"]);
 	var jump_down = func():
-		jump_tween = get_tree().create_tween();
-		jump_tween.tween_property(self, "current_height", 0.0, jump_down_time);
+		self.jump_tween = get_tree().create_tween();
+		self.jump_tween.tween_property(self, "player_data:current_height", 0.0, self.player_movement["jump_time"]["down"]);
 		var jump_finish = func():
-			jumping = false;
-		jump_tween.tween_callback(jump_finish);
-	jump_tween.tween_callback(jump_down);
+			self.player_data["jumping"] = false;
+		self.jump_tween.tween_callback(jump_finish);
+	self.jump_tween.tween_callback(jump_down);
 
 func die() -> void:
-	if !alive:
-		return;
-	alive = false;
-	#var tween = get_tree().create_tween();
-	#tween.tween_property(self, "scale", Vector3(0.25, 0.25, 0.25), 1);
-	#TODO: really want a fade, actually, if anything
-
-func countdown() -> void:
-	countdown_running = true;
-	$timer.start();
+	if self.player_state == State.Playing:
+		self.player_state = State.Dead; # TODO: some death animation
 
 func reset() -> void:
 	# TODO: on initial join, player_spawn set too late to apply
-	if !is_peer: # let multiplayer.gd handle peer positioning
-		player_position = player_spawn;
-		transform.origin = player_spawn;
-		forward_vec = Vector3.RIGHT;
-		var log = get_tree().get_root().find_child("gui", true, false).find_child("log");
+	if self.player_type == Type.Host: # multiplayer.gd will handle peer positioning
+		self.player_data["position"] = self.player_data["spawn"];
+		transform.origin = self.player_data["spawn"];
+		self.player_data["forward"] = Vector3.RIGHT; # TODO: probably want diff for diff spawns?
+		face_forward();
+		# TODO: feel like should reset jump values, but cannot get it to work
+		var log = get_tree().get_root().find_child("gui", true, false).find_child("log"); # TODO: better global-ing
 		log.message("Countdown Start!");
 	$trail.destroy_points();
-	alive = true;
-	if jump_tween:
-		jump_tween.stop();
-	jumping = false;
-	current_height = 0;
-	countdown_done = false;
-	countdown_running = false;
+	self.player_state = State.Waiting;
+	$timer.stop();
+
+func face_forward() -> void:
+	var p_pos = self.player_data["spawn"];
+	var w_pos = Global.world["position"];
+	var w_p_line = (p_pos - w_pos).normalized();
+	var forward_rotation = Quaternion(Vector3.RIGHT, 0.05 * PI);
+	look_at(forward_rotation * p_pos, Vector3.RIGHT);
+# TODO: make more dynamic: currently not usable on _ready() or $timer.start, for example

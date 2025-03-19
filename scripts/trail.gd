@@ -1,26 +1,28 @@
 extends Node3D
 
-@export var player: Node3D;
-
+@export var player: Player;
 var trail_point = preload("res://scenes/trail_point.tscn");
+
+var positions = {}; # HashSet as a Dict
 var points: Array[Node3D] = [];
 
-var main_node;
-var player_node;
-
 func _ready() -> void:
-	main_node = get_tree().get_root().find_child("main", true, false);
-	player_node = get_tree().get_root().find_child("player", true, false);
+	pass;
 
 func _on_timer_timeout() -> void:
-	if player.is_peer:
-		print(main_node.game_running, ".", player_node.countdown_running, ".", player.alive);
-	if !main_node.game_running or player_node.countdown_running or (!player.alive and !player.is_peer):
+	if self.player.player_type == Player.Type.Host and (Global.state != Global.State.Game or self.player.player_state != Player.State.Playing):
 		return;
-	var point = trail_point.instantiate();
-	points.append(point);
-	get_tree().get_root().add_child(point);
-	point.transform.origin = player.transform.origin;
+	make_point(self.player.transform.origin);
+
+func make_point(pos: Vector3) -> void:
+	if self.positions.has(pos):
+		return;
+	else:
+		self.positions[pos] = null; # emulating hashset: value doesn't matter
+	var point = self.trail_point.instantiate();
+	self.points.append(point);
+	get_tree().get_root().add_child(point); #TODO: add somewhere better
+	point.transform.origin = pos;
 	player_align(point);
 	enable_delay(point);
 
@@ -31,7 +33,7 @@ func player_align(point: Node3D):
 	timer.one_shot = true;
 	timer.wait_time = 0.05;
 	var look = func():
-		point.look_at(player.global_position, player.forward_vec);
+		point.look_at(self.player.global_position, self.player.player_data["forward"]);
 	timer.connect("timeout", look);
 	timer.start();
 
@@ -49,10 +51,12 @@ func enable_delay(point: Node3D):
 	timer.start();
 
 func _on_area_area_entered(area: Area3D) -> void:
-	if !player.is_peer:
-		player.die();
+	if self.player.player_type == Player.Type.Host:
+		self.player.die();
 
 func destroy_points() -> void:
-	for point in points:
+	for point in self.points:
 		point.queue_free();
-	points.clear();
+	self.points.clear();
+	self.positions.clear();
+	

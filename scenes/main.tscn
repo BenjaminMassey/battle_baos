@@ -1,7 +1,6 @@
-[gd_scene load_steps=7 format=3 uid="uid://cn6vxddmkbjfw"]
+[gd_scene load_steps=6 format=3 uid="uid://cn6vxddmkbjfw"]
 
 [ext_resource type="PackedScene" uid="uid://do1s3dw6r6fu" path="res://scenes/player.tscn" id="1_k4j4q"]
-[ext_resource type="Script" uid="uid://dfg66kwnvttym" path="res://scripts/main.gd" id="1_qxh3b"]
 [ext_resource type="Script" uid="uid://dg23qc43rexnc" path="res://scripts/camera.gd" id="3_kfpbu"]
 [ext_resource type="Script" uid="uid://bbwdj7sywm7xc" path="res://scripts/multiplayer.gd" id="4_3otew"]
 [ext_resource type="Script" uid="uid://b47q88jvefixb" path="res://scripts/log.gd" id="6_tefeu"]
@@ -12,7 +11,6 @@
 
 [node name="main" type="Node3D" parent="."]
 unique_name_in_owner = true
-script = ExtResource("1_qxh3b")
 
 [node name="game" type="Node3D" parent="main"]
 
